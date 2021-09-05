@@ -1,0 +1,4 @@
+worker-id: 756ab31b-5e5a-42f7-823d-a8e409ee6c0c
+logs.users: []
+logs.groups: []
+topology.submitter.user: croud

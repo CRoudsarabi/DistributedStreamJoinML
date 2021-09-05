@@ -1,0 +1,122 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+import hdbscan
+
+from sklearn.datasets import make_blobs,make_moons,make_circles
+
+
+from sklearn.cluster import AgglomerativeClustering,KMeans,DBSCAN
+
+from sklearn.mixture import GaussianMixture
+
+
+
+def plot_cluster(type):
+    fig, axs = plt.subplots(2, 2)
+
+   # if type == 'kmeans':
+        #fig.suptitle('K-Means Clustering')
+   # elif type== 'gmm':
+        #fig.suptitle('Gaussian Mixture Model')
+   # elif type== 'aggl':
+        #fig.suptitle('Agglomerative Clustering')
+    #elif type== 'dbscan':
+        #fig.suptitle('DBSCAN')
+    #elif type== 'hdbscan':
+        #fig.suptitle('HDBSCAN')
+
+    #Blobs
+    blobs = make_blobs(n_samples=1500, random_state=206)
+
+    X, y = blobs
+
+    if type == 'kmeans':
+        y_pred = KMeans(3).fit_predict(X);
+    elif type == 'gmm':
+        y_pred = GaussianMixture(3).fit_predict(X);
+    elif type == 'aggl':
+        y_pred = AgglomerativeClustering(3).fit_predict(X);
+    elif type == 'dbscan':
+        y_pred = DBSCAN().fit_predict(X);
+    elif type == 'hdbscan':
+        y_pred = hdbscan.HDBSCAN().fit_predict(X);
+
+
+    axs[0,0].scatter(X[:, 0], X[:, 1], c = y_pred)
+    axs[0,0].axes.get_xaxis().set_visible(False)
+    axs[0, 0].axes.get_yaxis().set_visible(False)
+
+    #Moons
+    noisy_moons = make_moons(n_samples=1500, noise=.05)
+
+    X, y = noisy_moons
+
+    if type == 'kmeans':
+        y_pred = KMeans(2).fit_predict(X);
+    elif type == 'gmm':
+        y_pred = GaussianMixture(2).fit_predict(X);
+    elif type == 'aggl':
+        y_pred = AgglomerativeClustering(2).fit_predict(X);
+    elif type == 'dbscan':
+        y_pred = DBSCAN(0.2).fit_predict(X);
+    elif type == 'hdbscan':
+        y_pred = hdbscan.HDBSCAN().fit_predict(X);
+
+    axs[0,1].scatter(X[:, 0], X[:, 1], c = y_pred)
+    axs[0, 1].axes.get_xaxis().set_visible(False)
+    axs[0, 1].axes.get_yaxis().set_visible(False)
+
+
+    #Anisotropicly
+
+    X, y = blobs
+
+    transformation = [[0.60834549, -0.63667341], [-0.40887718, 0.85253229]]
+    X = np.dot(X, transformation)
+
+    if type == 'kmeans':
+        y_pred = KMeans(3).fit_predict(X);
+    elif type == 'gmm':
+        y_pred = GaussianMixture(3).fit_predict(X);
+    elif type == 'aggl':
+        y_pred = AgglomerativeClustering(3).fit_predict(X);
+    elif type == 'dbscan':
+        y_pred = DBSCAN().fit_predict(X);
+    elif type == 'hdbscan':
+        y_pred = hdbscan.HDBSCAN().fit_predict(X);
+
+    axs[1,0].scatter(X[:, 0], X[:, 1], c = y_pred)
+    axs[1, 0].axes.get_xaxis().set_visible(False)
+    axs[1, 0].axes.get_yaxis().set_visible(False)
+
+
+    #Varied
+    X, y = make_blobs(n_samples=1500, centers= 3, cluster_std=[0.4, 1.2, 2.2], random_state=201)
+
+    #X, y = make_circles(n_samples=1500, random_state=206)
+
+    if type == 'kmeans':
+        y_pred = KMeans(3).fit_predict(X);
+    elif type == 'gmm':
+        y_pred = GaussianMixture(3).fit_predict(X);
+    elif type == 'aggl':
+        y_pred = AgglomerativeClustering(3).fit_predict(X);
+    elif type == 'dbscan':
+        y_pred = DBSCAN().fit_predict(X);
+    elif type == 'hdbscan':
+        y_pred = hdbscan.HDBSCAN().fit_predict(X);
+
+    axs[1,1].scatter(X[:, 0], X[:, 1], c = y_pred)
+    axs[1, 1].axes.get_xaxis().set_visible(False)
+    axs[1, 1].axes.get_yaxis().set_visible(False)
+
+    plt.show()
+
+
+
+plot_cluster('kmeans')
+plot_cluster('gmm')
+plot_cluster('aggl')
+plot_cluster('dbscan')
+plot_cluster('hdbscan')

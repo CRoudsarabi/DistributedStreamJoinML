@@ -1,0 +1,13 @@
+ML Part in Folder Code in Python
+Storm Topology in Folder DistributedStreamJoinML in Java
+
+Parameters:
+Parameters have to be set in the Topology AND in the Python implementation.
+The number of training episodes, clustering type and parallelism have to be set in ClustererBolt.py.
+The parallelism also has to be changed in the StormPartitioning.py (where the input for the ANN has to be adapted).
+The parameters should be set according to the performance capabilities of the machines. (If a GPU is installed the number of training episodes should be set higher etc.)
+I tried to make setting the parameters simpler but it caused many issues. In general, the split of Java/Python is a source of many issues.
+
+Further possible improvements:
+New clustering algorithms can be easily implemented in StormClustering.py. If the algorithm requires an affinity matrix instead of a distance matrix the implementation has to be changed slightly (see Approach Chapter in the Thesis). 
+The JoinerBolt is the part with the most optimization potential, where the implementation is very simple currently.

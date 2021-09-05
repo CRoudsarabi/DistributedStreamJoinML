@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  zookeeper:
+    image: zookeeper
+    restart: always
+
+  nimbus:
+    image: storm
+    command: >
+      storm nimbus
+      -c storm.local.hostname="nimbus"
+      -c topology.backpressure.check.millis: 123
+    ports:
+      - 6627:6627
+    restart: always
+
+  supervisor:
+    image: storm
+    command: >
+      storm supervisor
+      -c storm.local.hostname=${local_hostname}
+      -c topology.backpressure.check.millis: 123
+    environment:
+      local_hostname: "{{.Service.Name}}-{{.Task.Slot}}"
+    deploy:
+      mode: replicated
+      replicas: 12
+      placement:
+        max_replicas_per_node: 2
+    restart: always
+
+  ui:
+    image: storm
+    command: >
+      storm ui
+    ports:
+      - 8080:8080
+    restart: always

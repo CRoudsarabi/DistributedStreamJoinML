@@ -1,0 +1,42 @@
+In order to execute the same commands on multiple machines, you can use https://github.com/zinic/tmux-cssh. 
+
+For connecting to multiple machines as the same user do:
+$ tmux-cssh -u dbis -sc dbis-expsrv2 -sc dbis-expsrv3 -sc dbis-expsrv4
+
+If you want to store a set of hosts under a certain name, you can create the file ~/.tmux-cssh and add names like this:
+dbis-cluster: -u dbis -sc dbis-expsrv2 -sc dbis-expsrv3 -sc dbis-expsrv4
+
+Then you can connect to the machines using the name at the beginning of the line:
+$ tmux-cssh -cs dbis-cluster
+
+Mind -cs vs -sv. You can also use -cs to combine server connections like this:
+coordinator-nodes: -sc host1 -sc host2
+worker-nodes: -sc host3 -sc host4 -sc host5 -sc host6
+all-nodes: -cs coordinator-nodes -cs worker-nodes
+
+Bonus tip: use -i to specify a key file for AWS hosts:
+aws-storm-cluster: -u storm-mgmt -i /path/to/key -sc host1 -sc host2 -sc host3
+
+
+
+
+Homeoffice and the Cluster
+There is one proxy host, kerberos, where you can get a login from Steffen. Using ssh proxy jump, you can connect through this to the cluster nodes. This script helps you creating a ssh-config for reaching the nodes like from your office:
+
+#!/bin/bash
+
+USERNAME=gjurovski
+
+echo "Host dbis-expsrv-jump"
+echo "    HostName kerberos.informatik.uni-kl.de"
+echo "    User $USERNAME"
+echo "    ForwardAgent yes"
+
+for i in $(seq 16) ; do
+  echo "Host dbis-expsrv$i"
+  echo "    ProxyJump dbis-expsrv-jump"
+done
+
+
+Usage: ./create-ssh-jump-config.sh >> .ssh/config.
+Bonus tip: add the line ssh-copy-id dbis-expsrv$i to the for-loop and do not pipe the script output in order to install your public key on all the servers.

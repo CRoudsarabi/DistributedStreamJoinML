@@ -1,0 +1,69 @@
+Learning a Partitioning Advisor with Deep Reinforcement Learning
+
+-train a DRL advisor that suggests good database partitionings
+-for use in data warehouses with OLAP-style workloads
+-no manually curated training data is required a priori with DRL (as opposed to supervised machine learning)
+	-DRL agents learn by trying out different partitioning schemes and monitoring rewards
+-translates patitioning problem to Markov Decision Process:
+	-Q-function: Approximates futures rewards based on states on actions, learned during training (exploration vs exploitation)
+	-States: tables T (replicated or partitioned and over which attributes), Queries Q (with frequency) and Edges E (pairs of join attributes)
+	-Actions: replicated/partionion the table, activating/de-activating edges
+	-Rewards: based on actual runtime or cost model
+-several DRL agents are trained (commitee of experts)
+-phases of the training procedure:
+	-Offline training using cost model
+	-Online training using actual training runtimes
+	-RL subspace using experts training
+-apdapt advisor by incremental training (if workload/schema change) -> much cheaper than full retraining of agents
+-assumption is that the workload of queries is known in advance
+
+
+PartLy: Learning Data Partitioning for Distributed Data Stream Processing
+	
+-data stream partitioner using reinforcement learning
+Limitations:
+	-one key only partitioned to at maximum two processing nodes
+	-does not process individual tuples -> micro-batched stream processing
+-uses cost model from "The power of both choices: Practical load balancing for distributed stream processing engines."
+	-distance between largest and smallest data block
+-markov decision process:
+	-State:vector for each state that represents information about the batched data and the assignement to data blocks, aditionally matrix M stores assignments of keys to data blocks
+	-Actions: ?assignement of a key to a batch?
+
+
+Scaling Out Schema-free Stream Joins
+
+-computing natural joins over large streams of semi-structured data (JSON)
+-identify patterns of co-occurence of the attribute value pairs
+-ensure potentially joinable documents end up at the same machiene to guarantee correct join results
+-partition incoming data onto multiple machienes
+-optimize trade-off between replication and load-balancing
+-partitioning is done by building association groups
+-uses a FP-Tree for local join computation
+
+NoBench (& Argo)
+
+Argo automated mapping layer for storing and querying JSON data in a relational system
+JSON advantages: flexibility & ease-of-use (no schema), sparseness, hierachical, dynamic typing
+NoBench benchmark suite: simple and small set of queries that touch on common operations in the target settings
+-data generator and 12 simple queries
+
+Generated Dtata:
+str1,str1,num,bool,tousandth with fixed types
+dyn1,dyn2 dynamically typed
+nested_arr, nested_obj
+sparse_XXX : each objecte has 10 consecutively-numbered sparse attributes. Any two object wil share all of their sparse attributes or none
+
+Download: http://pages.cs.wisc.edu/~chasseur/
+
+
+The Power of Both Choices: Practical Load
+Balancing for Distributed Stream Processing Engines
+
+load-balancing in distributed stream processing engines
+introduce partial key grouping which consits of two techniques:
+-key splitting: each key can be handled by both candidate processing elements
+-local load estimation: each source independently tracks the load of downstream processing elements
+
+Imbalance definded as difference between average and maximum load of workers
+

@@ -1,0 +1,250 @@
+26.04.21
+Two weeks left
+Currently done so far:
+Code is complete and first iteration of chapters 1-5
+
+Outline:
+goal for 02.05.21 (next sunday):
+-finish experiments
+-finish evaluation and conclusion chapters
+-extend approach and implementation chapters
+
+Then one more week (until 10.05.21):
+-improve and extend the thesis
+-possibly restructure/combine approach & implementation chapters 
+
+
+24.03.21
+New implementation for the Reinforcement learning:
+
+Previously discussed : Calculate join results for a "sample" before the RL
+disadvatages: static, requires to calculate joins at the start (delayed deployment)
+
+New idea: New Joiner that gives feedback to the RL
+-n*n Matrix M were n is the number of clusters
+-initialized with all zeroes
+-if cluster A and B have a lot of overlap of joinable/identical documents during the joins, we decrease the value of M[a,b]
+-likewise if cluster A and B have very little overlap of joinable/identical documents during the joins, we increase the value of M[a,b]
+-after the partitioner receives feedback from the joiner we reset our learning rate and train our NN with the new values
+-Matrix M wil get filled over time with the correct values
+
+-the cost function takes M into account:
+--Example: 
+---1. We assign cluster C to a partition X
+---2. Partition X already contains cluster A and cluster B therefore we calculate M[a,c] and M[a.b]
+---3. we add M[a,c] and M[a.b] to our current cost, if for example M[a,c]=-2.5 (strong overlap) the overall cost of the assignment decreases
+
+Advantages:
+-adaptive, can improve over time and adapt to changes
+-also learns the accurate sizes of the clusters (before we estimated from the sample)
+-puts more emphasis on the RL and less on the clustering
+
+Disadvantages:
+-takes a while to learn the best assignements (especially with a large number of joiners)
+-adaptiveness has a limit (if kv-pair appear that we have never seen before we need to redo the sampling/clustering and then we need to Reset M)
+-had to rewrite the joiner bolt (which is not optimal)
+
+03.03.21
+
+Topology implemented in java, Clusterer bolt in python using storm multilang
+https://storm.apache.org/releases/2.1.0/Multilang-protocol.html
+->better performance for the precomputations
+
+Currently working on:
+-recalucaltion of partitons when quality is below threshold
+-training council of experts ahead of time (currently agent is trained when bolt is initialized)
+-deploy topology remotely
+
+04.02.21
+1. You have to have concrete answers for why you cannot use rl for the complete procedure. In the partitioning why are you not taking into account the data? If for the partitioning step you are not taking into account the data, then what is the difference to the existing approaches for partitioning?
+
+RL has state-> action -> reward
+We have to model the state in a way that is not too complex (since its the input for the ANN)
+How to model 10000 documents as a vector? They have to be grouped/clustered
+"A small state space is essential to apply Q-learning because we have to compute the Q-values for all possible
+actions to decide which action to execute in a state." from Learning a Partitioning Advisor
+with Deep Reinforcement Learning
+
+2. You have to provide a complete overview from the beginning./Why are you clustering attribute-value pairs and not documents/Compare with TF-IDF.
+Current (over attribute-value pairs):
+C1 {A1,A2}, C2 {A3}, C3 {A4}
+D1{A1,A4} -> assign to clusters C1 and C3 (this is where the replication comes from)
+
+Over documents:
+C1 {D1,D2}, C2 {D3}, C3 {D4}
+D5-> assign to which cluster? Curently uses precomputed similarity matrix for clustering (not actual n-dimensional space)
+
+Each document assigned to only one cluster? or soft clustering? soft clustering + similarity matrix does not work in HDBSCAN for example.
+
+3. Use association groups instead of the clustering and assign them to partitions using RL. Compare to your this to the Benchmark and compare this to your approach.  Don't send tuples to the Sampler when you don't need to. Optimize the topology. 
+Access to Implementation/Joiner
+
+5. Comparison of the clustering approaches in terms of accuracy vs replication vs load balance and a plot. What would happen if you use K-Means. (100% accuracy vs awful replication)
+
+
+26.01.21
+Topology:
+Precomputation: 
+Problem when parallelizing -> do not know how many different values an attribute can take if this process is split over multiple machienes
+-> Needs to be done at Clusterer bolt
+Only one instance of Clusterer bolt may lead to performance issues
+
+When splitting common attributes:
+attributes has less vlaues than parallelization requieres + (attribute appears in % of all documents)
+
+{ a:2,b:3,c:4 } -> {a_b:2_3, c:4}
+with a and b as booleans: goes from 2 to 4 possible partitions
+
+Need to recalculate attribute CoOccurances after splitting:
+2 possible solutions :
+Approximate: ( CoOccurances(a)+CoOccurances(b) ) / 2 -> worked well on NOBENCH but maybe not on all data?
+or
+Complete Recalculation: Have to iterate over all documents again -> See Alternative topology
+
+Only worked locally (no internet for a few days)
+
+
+
+
+15.01.21
+Implemented idea: Soft clustering
+Results unfortunatly not on the same quality as the simple approach (combine very common attributes)
+See plot : ApporachesComparison in Plots/Clustering (Performed a join over 1000 objects and made a list of the pairwise objects that could be joined, then checked what % of pairs shows up in the clusters)
+I think the main problem is that now documents needs to have ALL attribute-value pairs and not just one when we use soft clustering
+Another problem is that the soft clustering approaches do not work with precomputed distance matrices 
+-> I had to turn the distance matrix into "raw data" (center the matrix and then take the eigenvalues of the matrix etc)
+
+Going ahead without soft clustering still use hdbscan for the actual clustering:
+-fast, prunes automatically
+
+Next step: start working on the actual storm topology
+
+08.01.21
+Implemented idea: combine very common attributes (booleans) to reduce cluster sizes:
+{ a:2,b:3,c:4 } -> {a_b:2_3, c:4}
+-cluster sizes reduced by a lot
+-simple approach
+
+started to implemented idea: soft-cluster (multi-assignement clustering)
+
+problem with fuzzy clustering is that membership adds up to 1
+threshold idea only doesnt work if a attribute-value pair is part of many cluster (like a boolean)
+-then it is member of many cluster but all with low membership score
+
+hdbscan (Hierarchical Density-Based Spatial Clustering of Applications with Noise)
+https://hdbscan.readthedocs.io/en/latest/index.html
+-support precomputed distances
+-supports soft-clustering (probability of membership to a cluster that does NOT add up to 1)
+--its also possible to not assign a point to any cluster via min_points parameter (would make pruning step as precomputation redundant)
+-very efficent (n log n: only slightly slower than k-means and much faster then for example affinity propagation/agglomerative clustering) 
+
+Have implemented the algorithm but have not spent much time testing/tuning and comparing it yet
+
+
+
+
+28.12.20
+Implemented idea - prune attribute-value pairs before clustering to solve Problem 1 (see last meeting notes):
+-reduced the amount of replication by a lot
+-reduced complexity of the algorithm (especially important for affinity propagation)
+Effect on join result minimal BUT this is also because problem 2 still persists 
+
+Implemented idea - tune parameters of clustering:
+- played around with linkage (complete, average, ward), number of clusters k for agglomeative clustering, damping for affinity propagation
+Has minimal impact on results (clusters still very uneven)
+
+Implemented idea - prune common attributes to prevent large partitions (Problem 2):
+-does reduce partition sizes by a lot
+However also reduces join results significantly
+
+Overall I think this approach might be a dead end -> need a different form of clustering: 
+-need a for of multi-assignement clustering so attribute value pair can be assigned to multiple clusters
+-cluster then forms association group (documents needs to have ALL attribute-value pairs and not just one)
+
+fuzzy clustering not really applicable ( I dont need a membership value that adds up to 1):
+maybe fuzzy with threshold? (if membership greater than a threshold)
+similar approach: Gaussian mixture model (calculates a probability, can use threshold to assign to multiple clusters)
+Paper: Multi-Assignment Clustering for Boolean Data
+
+Does this still have a benefit of just forming association groups?
+
+18.12.20
+
+Would tf idf work aswell?:
+idf = inverse document frequency = items that are rare in the collection
+-joins are often made over common attributes
+e.g. customer object with gender male or female -> gender would have low idf since it will occur in roughly 50% of customer objects
+however tf-idf groups document based on topic -> depending on the join it could work
+
+Problem with approach:
+clustering is done over attribute-value pairs
+documents are sent to each cluster they have a attribute-value pair in
+Problem 1: with a large cluster there is a high chance that a very large pecentage of documents have atleast one of the attribute value pairs within
+this can lead to 60-90% of documents being assigned to one cluster
+especially unenven cluster sizes have this problem -> agglomerative clustering does not work well
+higher number of clusters spread documents but can lead to high replication
+Problem 2: attribute-value pairs that appear in alot of documents can on their own lead to very large partitions (e.g. booleans)
+-how does the non AI based approach solve this?
+
+Potential solution strategies:
+-prune attribute-value pairs before clustering:
+-> consider only those with high value of co-occurences with others
+-> documents that have no attribute value pairs in any cluster can be sent to any machine
+-limit replication:
+-> dont sent a document to each cluster where it has an attribute-value pair within, being more selective instead
+-tune parameter of clustering: 
+-> create more even clusters (for example through ward-linkage)
+-> create larger number of cluster (large k)
+
+11.12.20
+
+Processing benchmark:
+Nested items : unnest or consider as one pair?
+
+Unsupervised Learning:
+
+K-Means:
+-no mean for similarity
+-requires k
+-> not really applicable /useful
+
+AffinityPropagation:
+-clusters decribes by exemplar
+-uses affinity matrix
+-messages between samples (resposibility/availability)
+-chooses k but needs preference and damping factor
+-drawback: high complexity
+
+
+Agglomerative clustering:
+-bottom up hierachical clustering
+-can use affinity matrix
+-different linkadge methods(ward,single,average,complete) which change behavior and complexity of the algorithm
+-can lead to uneven cluster sizes (see plot)
+
+
+Main Problem:
+How to evaluate what clustering works well?
+
+
+
+13.11.20
+Coding progress:
+
+-overfitting (major bug resolved/ played around with dropout layer)
+-optimizations (look ahead added)
+-started with integrating NoBench
+
+Theory progress:
+
+using unsupervised ML to find similarities in the JSON data
+
+related papers:
+->Deep Metric Learning Using Triplet Network
+->Deep Learning for Entity Matching: A Design Space Exploration
+
+since data streams can change, use incremental Learning to adapt:
+related papers:
+->Incremental Learning for Classification of Unstructured Data Using Extreme Learning Machine
+
+

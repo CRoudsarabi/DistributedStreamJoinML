@@ -1,0 +1,49 @@
+Initial Description:
+"Learning to partition data streams for similarity or join processing
+
+Machine Learning and Deep Learning are in the rising in the research field, particularly in their
+combination with database and data streaming topics. However, learning to partition data
+streams for join or similarity, enhanced with learning was not previously discussed.
+Possible Tasks:
+● Explore existing approaches
+● Create novel machine learning approach for partitioning
+● Updating the partitions by using Reinforcement Learning, advising for the most optimal
+change of partitions
+● Measure the performance of the model in comparison to state-of-the-art approaches
+Relevant research papers in this area:
+- Machine-learning enhanced partitioning
+- Learning a Partitioning Advisor with Deep Reinforcement Learning
+( https://arxiv.org/abs/1904.01279 )
+- PartLy: Learning Data Partitioning for Distributed Data Stream Processing
+( https://www.cs.purdue.edu/homes/aref/papers/aidm2020.pdf )
+- Partitioning of json data without machine learning
+- Scaling Out Schema-free Stream Joins
+( https://dbis.informatik.uni-kl.de/files/papers/scaling_out_schema_free_stream_jo
+ins.pdf )"
+
+Meeting 1:
+-optimize trade-off between load balancing and low replication
+-approximate results
+-using Python and Apache Storm
+-NoBench JSON data generator
+
+Meeting 2:
+Initial Problem:
+Focusing only on the partitioning -> assigning the association groups to the different machienes
+
+Problem as Markov Decision Process:
+State: Vector with association groups and a vector with assignement to partitions
+Action: Assigning a association group to a partition 
+Rewards: cost model (offline)
+
+Cost Model: ?
+->"The power of both choices: Practical load balancing for distributed stream processing engines." (load-balancing)
+-> need a cost model for minimizing replication
+
+
+After the initial part has been implemented:
+1. Generalizing the partitioning approach
+1a. Adress Overfitting (Dropout Layer)
+2. use DRL to build the actual association groups (Markov Decision Process? Cost Model?)
+3. Online training using actual runtimes
+4. Training multiple agents (comitee of experts)
